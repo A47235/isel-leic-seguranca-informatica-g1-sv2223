@@ -1,0 +1,29 @@
+
+1.1
+
+x'i = D(k)(yi) + RV
+
+1.2
+
+Ao contrário do CBC, padrões no texto claro poderam ser evidentes neste algoritmo, devido ao facto de 
+não haver interdependência entre os blocos e o RV ser sempre o mesmo para todo xi
+
+Em termos de paralelização, o CBC não é paralelizável pois é não possivel correr vários blocos da
+cifra paralelamente, ao contrário desta cifra pois nenhum dos seus blocos depende na realização prévia de outro bloco
+
+
+
+
+2
+
+O custo computacional deste método é menor em comparação a um sistema totalmente assimetrico e garante maior segurança da chave simétrica.
+Para decifrar a messagem, primeiro utiliza-se a chave privada do recetor para decifrar a chave encriptada, isto gera a session key
+que é depois usada para a decifra da cifra para a obter a menságem.
+
+
+
+3.1
+
+Antes de gerar a assinatura é necessário definir as chaves privadas e publicas, estas são definidas utilizando as funções de iniciação initSign para a privada e initVerify para a publica.
+Para definir os dados a assinalar utiliza-se a função update e, depois de estar tudo definido é utilizada a função sign() para gerar a assinatura.
+Utilizando a chave definida na função initSign() e os dados colocados pela função update() é gerado uma assinatura que depois pode ser verificada.
