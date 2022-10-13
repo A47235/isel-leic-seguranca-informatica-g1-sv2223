@@ -39,6 +39,12 @@ uma assinatura que depois pode ser verificada.
 
 3.2
 
+no caso onde a função de hash está comprometida onde é computacionalmente fazível,
+dado x, obter x′ ̸= x tal que MD5(x′) = MD5(x), implica a possibilidade de uma menságem ser alterada na
+transmição e depois na verificação da assinatura seja mesmo assim ser verificada como legítima, devido
+ao resultado da função de hash ser o mesmo para as duas menságens diferentes, causando assim problemas
+de autenticidade.
+
 Autenticidade
 
 
