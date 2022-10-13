@@ -1,0 +1,61 @@
+1.1
+
+y_i = D(k)(x_i) (+) RV
+1.2
+a)
+
+Ao contrário do CBC, padrões no texto claro poderam ser evidentes neste algoritmo, devido ao facto de 
+não haver interdependência entre os blocos. O RV é sempre o mesmo para todo x_i.
+
+Neste modo de operação os padrões no texto claro poderam ser evidentes porque blocos(x_i) iguais geram
+blocos cifrados(y_i) iguais. Isto não acontece no modo CBC porque a cifra nos blocos(x_i) é feita 
+usando a informação cifrada do bloco anterior, ou o vetor inicial no caso do primeiro, o que faz com 
+que blocos iguais geram blocos cifrados diferentes.
+
+b)
+
+Em termos de paralelização, o CBC não é paralelizável pois não é possível correr vários blocos da
+cifra paralelamente, porque necessitam do valor cifrado do bloco anterior, ou do vetor inicial no 
+caso do primeiro. Contrariamente, na cifra definida neste exercício nenhum dos seus blocos depende 
+da realização prévia de outro bloco.
+
+2
+
+Esta abordagem foi escolhida pois o custo computacional deste método é menor em comparação a um 
+sistema totalmente assimetrico, garantindo maior segurança da chave simétrica e deixando de existir 
+a necessidade de enviar a chave simétrica através de um canal seguro.
+Para decifrar a messagem, primeiro utiliza-se a chave privada do recetor para decifrar a chave encriptada, 
+isto gera a session key que é depois usada para a decifra da cifra para a obter a menságem.
+
+3.1 
+
+Antes de gerar a assinatura é necessário definir as chaves privadas e publicas, estas são definidas 
+utilizando as funções de iniciação initSign, que recebe por parametro a chave privada, e initVerify,
+que recebe por parametro a chave publica.
+Para definir os dados a assinalar utiliza-se a função update e, depois de estar tudo definido é 
+utilizada a função sign() para gerar a assinatura, o retorno da função.
+Utilizando a chave definida na função initSign() e os dados colocados pela função update() é gerado 
+uma assinatura que depois pode ser verificada.
+
+3.2
+
+Autenticidade
+
+
+-- TBC --
+4.1
+
+
+
+4.2
+
+4.3
+
+5 - desc
+
+
+6 - desc
+
+
+
+
