@@ -1,6 +1,6 @@
 package _6;
 
-import main.java.utils.FileOperations;
+import utils.FileOperations;
 
 import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
