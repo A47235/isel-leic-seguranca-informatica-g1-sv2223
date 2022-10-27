@@ -1,6 +1,6 @@
-package main.java._6;
+package _6;
 
-import main.java.utils.FileOperations;
+import utils.FileOperations;
 
 import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
@@ -10,11 +10,11 @@ import java.security.Key;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
 
-public class dec {
+public class Dec {
 /*
     filename dec.decode(FilenameCifer, FilenameKey, keystore);
 */
-    public String decode(String filenameCiphered, String filenameKey, KeyStore keystore) throws Exception {
+    public static String decode(String filenameCiphered, String filenameKey, KeyStore keystore) throws Exception {
         try{
             Cipher cifraSim = Cipher.getInstance("AES/GCM/NOPADDING");
             Cipher cifraAssim = Cipher.getInstance("RSA");
