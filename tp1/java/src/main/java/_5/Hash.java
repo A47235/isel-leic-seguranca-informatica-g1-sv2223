@@ -9,23 +9,31 @@ import java.security.NoSuchAlgorithmException;
 
 
 public class Hash {
-    public static void main(String[] args) throws NoSuchAlgorithmException, IOException {
+    public static void main(String[] args) throws IOException {
 
         if (args.length == 2) {
-            String algorithm = args[0];
-            String file = args[1];
 
-            MessageDigest md = MessageDigest.getInstance(algorithm);
+            try {
 
-            byte[] msg = getFileBytes(file);
-            md.update(msg);
-            byte[] hash = md.digest();
+                String algorithm = args[0];
+                String file = args[1];
 
-            hashPrint(hash);
+                MessageDigest md = MessageDigest.getInstance(algorithm);
+
+                byte[] msg = getFileBytes(file);
+                md.update(msg);
+                byte[] hash = md.digest();
+
+                System.out.println(algorithm + " hash:\n");
+                hashPrint(hash);
+
+            } catch (NoSuchAlgorithmException e) {
+                System.out.println("bad algorithm");
+            }
+
         } else System.out.println("bad args");
 
     }
-
 
     private static void hashPrint(byte[] h) {
         for (byte b : h) {
