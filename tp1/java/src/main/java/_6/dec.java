@@ -1,6 +1,6 @@
-package _6;
+package main.java._6;
 
-import utils.FileOperations;
+import main.java.utils.FileOperations;
 
 import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
@@ -15,13 +15,12 @@ public class dec {
     filename dec.decode(FilenameCifer, FilenameKey, keystore);
 */
     public String decode(String filenameCiphered, String filenameKey, KeyStore keystore) throws Exception {
-
         try{
             Cipher cifraSim = Cipher.getInstance("AES/GCM/NOPADDING");
             Cipher cifraAssim = Cipher.getInstance("RSA");
             Key privKey = keystore.getKey(keystore.aliases().nextElement(), "changeit".toCharArray());
 
-            // Get simetric key
+            // Get symmetric key
             byte[] cipheredKey = FileOperations.readFile64(filenameKey);
             cifraAssim.init(Cipher.DECRYPT_MODE, privKey);
             byte[] decipheredKey = cifraAssim.doFinal(cipheredKey);
@@ -42,5 +41,4 @@ public class dec {
             throw new Exception("The cipher does not exist");
         }
     }
-
 }
