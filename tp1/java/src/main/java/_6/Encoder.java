@@ -1,4 +1,4 @@
-package main.java._6;
+package _6;
 
 import main.java.utils.FileOperations;
 

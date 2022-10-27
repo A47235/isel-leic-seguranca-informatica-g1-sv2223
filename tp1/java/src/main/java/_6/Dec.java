@@ -1,4 +1,4 @@
-package main.java._6;
+package _6;
 
 import main.java.utils.FileOperations;
 
@@ -10,7 +10,7 @@ import java.security.Key;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
 
-public class dec {
+public class Dec {
 /*
     filename dec.decode(FilenameCifer, FilenameKey, keystore);
 */
