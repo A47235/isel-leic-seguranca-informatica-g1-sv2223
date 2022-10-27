@@ -27,13 +27,15 @@ public class FileOperations {
         FileInputStream fis = new FileInputStream(filename);
         Base64InputStream input = new Base64InputStream(fis);
         data = input.readAllBytes();
+        input.close();
         return data;
     }
 
     public static void writeToFile64(byte[] data, String filename) throws IOException {
         FileOutputStream fos = new FileOutputStream(filename);
         Base64OutputStream output = new Base64OutputStream(fos);
-        fos.write(data);
+        output.write(data);
+        output.close();
     }
 
     private static void checkFile(File file, String filename) throws FileNotFoundException {
