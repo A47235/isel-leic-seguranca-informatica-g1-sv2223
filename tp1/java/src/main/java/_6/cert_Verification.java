@@ -92,6 +92,7 @@ public class cert_Verification {
         PKIXBuilderParameters builder = new PKIXBuilderParameters(ks, selector);
         builder.addCertStore(store);
 
+
         
 
         CertPathBuilder builder1 = CertPathBuilder.getInstance("PKIX");
