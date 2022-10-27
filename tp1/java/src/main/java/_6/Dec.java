@@ -14,7 +14,7 @@ public class Dec {
 /*
     filename dec.decode(FilenameCifer, FilenameKey, keystore);
 */
-    public String decode(String filenameCiphered, String filenameKey, KeyStore keystore) throws Exception {
+    public static String decode(String filenameCiphered, String filenameKey, KeyStore keystore) throws Exception {
         try{
             Cipher cifraSim = Cipher.getInstance("AES/GCM/NOPADDING");
             Cipher cifraAssim = Cipher.getInstance("RSA");
