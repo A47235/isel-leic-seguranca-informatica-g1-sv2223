@@ -36,7 +36,7 @@ public class Main {
     private static void encodePrepare(String filename, String certName) throws Exception {
 
         CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
-        FileInputStream fis = new FileInputStream("/" + certBase + "/end-entities/" + certName);
+        FileInputStream fis = new FileInputStream("./" + certBase + "/end-entities/" + certName);
         Certificate cert = certificateFactory.generateCertificate(fis);
 
         // cert_Verification
@@ -48,7 +48,7 @@ public class Main {
     private static void decodePrepare(String encFileName, String encKeyFileName, String privateKeyFileName) throws Exception {
 
         KeyStore ks = KeyStore.getInstance("PKCS12");
-        ks.load(new FileInputStream("/" + certBase + "/pfx/" + privateKeyFileName), "changeit".toCharArray());
+        ks.load(new FileInputStream("./" + certBase + "/pfx/" + privateKeyFileName), "changeit".toCharArray());
         Dec.decode(encFileName, encKeyFileName, ks);
         System.out.println("The file 'deciphered_" + encFileName + "' has the decoded information");
     }
