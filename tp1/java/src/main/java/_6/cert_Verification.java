@@ -21,6 +21,8 @@ public class cert_Verification {
     static final String certsLocation = "certificates-and-keys/end-entities";
     static final String trustLocation = "certificates-and-keys/trust-anchors/CA.jks";
 
+    static final String pass = "changeit";
+
     public cert_Verification() throws CertificateException {
     }
 
@@ -60,7 +62,7 @@ public class cert_Verification {
 
     private static KeyStore getKeyStore() throws KeyStoreException, IOException, CertificateException, NoSuchAlgorithmException {
         final KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
-        final String pass = "changeit";
+
 
         try (java.io.FileInputStream fis = new java.io.FileInputStream(trustLocation)) {
             ks.load(fis, pass.toCharArray());
@@ -89,16 +91,13 @@ public class cert_Verification {
 
         CertStore store = getCerts();
 
-        PKIXBuilderParameters builder = new PKIXBuilderParameters(ks, selector);
-        builder.addCertStore(store);
-        builder.setRevocationEnabled(false);
+        PKIXBuilderParameters builderParams = new PKIXBuilderParameters(ks, selector);
+        builderParams.addCertStore(store);
+        builderParams.setRevocationEnabled(false);
 
-
-        
-
-        CertPathBuilder builder1 = CertPathBuilder.getInstance("PKIX");
+        CertPathBuilder builder = CertPathBuilder.getInstance("PKIX");
         try {
-            builder1.build(builder);
+            builder.build(builderParams);
         } catch (CertPathBuilderException e) {
             return false;
         }
