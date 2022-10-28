@@ -91,6 +91,7 @@ public class cert_Verification {
 
         PKIXBuilderParameters builder = new PKIXBuilderParameters(ks, selector);
         builder.addCertStore(store);
+        builder.setRevocationEnabled(false);
 
 
         
@@ -107,7 +108,7 @@ public class cert_Verification {
     }
 
     public static void main(String[] args) throws IOException, InvalidAlgorithmParameterException, CertificateException, KeyStoreException, NoSuchAlgorithmException, CertPathBuilderException, CertStoreException {
-        System.out.println(verify("certificates-and-keys/cert-int/CA2-int.cer"));
+        System.out.println(verify("certificates-and-keys/end-entities/Alice_2.cer"));
     }
 
 }
