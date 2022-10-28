@@ -81,7 +81,7 @@ public class cert_Verification {
         return cs;
     }
 
-    static boolean verify(String certPath) throws CertificateException, KeyStoreException, IOException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, CertPathBuilderException, CertStoreException {
+    static boolean verify(String certPath) throws Exception {
 
         KeyStore ks = getKeyStore();
 
@@ -100,15 +100,10 @@ public class cert_Verification {
         try {
             builder1.build(builder);
         } catch (CertPathBuilderException e) {
-            throw e;
-            //return false;
+            return false;
         }
         return true;
 
-    }
-
-    public static void main(String[] args) throws IOException, InvalidAlgorithmParameterException, CertificateException, KeyStoreException, NoSuchAlgorithmException, CertPathBuilderException, CertStoreException {
-        System.out.println(verify("certificates-and-keys/end-entities/Alice_2.cer"));
     }
 
 }
