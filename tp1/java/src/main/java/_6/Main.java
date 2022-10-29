@@ -12,7 +12,7 @@ public class Main {
 
 
     // No verification of parameter numbers, if below will print exception
-    
+
     public static void main(String[] args) throws IOException {
 
         BufferedReader input = new BufferedReader(new InputStreamReader(System.in));

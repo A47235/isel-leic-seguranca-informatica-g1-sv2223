@@ -44,14 +44,23 @@ dado x, obter x′ ̸= x tal que MD5(x′) = MD5(x), implica que existe a possib
 transmição e ser considerada legitima quando for verificada, pois o resultado da função de hash MD5 é o mesmo 
 para duas mensagens diferentes, causando assim problemas de autenticidade.
 
--- TBC --
 4.1
 
-
+A chave necessária para validar a assinatura de um certificado não está presente em nenhum certificado
+com a exceção do certificado raiz. Isto dá-se devido ao facto de que para validar um certificado é
+necessário ir ao certificado anterior, o cerificado a partir do qual o novo foi criado. Como o certificado
+raiz não tenho nenhum precedente, ele tem de conter a chave para se auto certificar.
 
 4.2
 
+Os certificados X.509 necessitam de uma chave pública e uma chave privada para garantir a sua autenticidade.
+Se usassem um esquema MAC qualquer pessoa poderia criar certificados falsos que contariam como autenticados.
+
+
 4.3
+
+Os ficheiros .cer contem apenas a chuva pública isto faz com que possam ser transmitidos por canais inseguros.
+Os ficheiros .pfx contem tanto a chave pública como a privada por isso a sua transmissão tem de ser, estritamente, por canais seguros.
 
 5 - desc
 
