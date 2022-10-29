@@ -9,6 +9,10 @@ public class Main {
 
 
     private static String certBase = "certificates-and-keys";
+
+
+    // No verification of parameter numbers, if below will print exception
+    
     public static void main(String[] args) throws IOException {
 
         BufferedReader input = new BufferedReader(new InputStreamReader(System.in));
@@ -35,11 +39,13 @@ public class Main {
 
     private static void encodePrepare(String filename, String certName) throws Exception {
 
+        if(!Cert_Verification.verify("./" + certBase + "/end-entities/" + certName)){
+            throw new Exception("Invalid certificate exception");
+        }
         CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
         FileInputStream fis = new FileInputStream("./" + certBase + "/end-entities/" + certName);
         Certificate cert = certificateFactory.generateCertificate(fis);
 
-        // cert_Verification
         String [] outFileNames = Encoder.encode(filename, cert);
         System.out.println("The filename for the cyphered file is '" + outFileNames[0] + "' and the " +
                 "filename for the cyphered key is '" + outFileNames[1] + "'");

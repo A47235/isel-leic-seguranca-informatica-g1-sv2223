@@ -15,7 +15,7 @@ import java.security.cert.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class cert_Verification {
+public class Cert_Verification {
 
     static final String intCertsLocation = "certificates-and-keys/cert-int";
     static final String certsLocation = "certificates-and-keys/end-entities";
@@ -23,7 +23,7 @@ public class cert_Verification {
 
     static final String pass = "changeit";
 
-    public cert_Verification() throws CertificateException {
+    public Cert_Verification() throws CertificateException {
     }
 
     private static CertStore getCerts() throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, CertificateException, IOException {
