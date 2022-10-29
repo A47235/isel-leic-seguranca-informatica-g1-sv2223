@@ -12,12 +12,14 @@ public class FileOperations {
         checkFile(file, filename);
         FileInputStream fis = new FileInputStream(filename);
         data = fis.readAllBytes();
+        fis.close();
         return data;
     }
 
     public static void writeToFile(byte[] data, String outFilename) throws IOException {
         FileOutputStream fos = new FileOutputStream(outFilename);
         fos.write(data);
+        fos.close();
     }
 
     public static byte[] readFile64(String filename) throws IOException {
