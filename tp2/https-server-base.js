@@ -1,5 +1,6 @@
 // Built-in HTTPS support
 const https = require("https");
+const http = require("http");
 // Handling GET request (npm install express)
 const express = require("express");
 // Load of files from the local file system
@@ -21,8 +22,8 @@ app.get("/", function (req, res) {
 
 // configure TLS handshake
 const options = {
-    key: fs.readFileSync('<server private key PEM>'),
-    cert: fs.readFileSync('<server certificate PEM>'),
+    key: fs.readFileSync('./secure-server.pfx'),
+    //cert: fs.readFileSync('./secure-server.cer'),
     //ca: fs.readFileSync('<server trustbase PEM (root CA)>'), 
     //requestCert: true, 
     //rejectUnauthorized: true
