@@ -1,0 +1,7 @@
+p, free, /list/* , read
+p, premium, /list/* , *
+p, admin, /*, *
+
+g, nunobartolomeu2002@gmail.com, premium
+g, premium, free
+g, admin, premium
