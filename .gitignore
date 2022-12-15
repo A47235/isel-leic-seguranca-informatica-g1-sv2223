@@ -23,5 +23,5 @@
 hs_err_pid*
 
 # node modules
-*/node_modules
+node_modules/
 tp2/_6/package-lock.json
