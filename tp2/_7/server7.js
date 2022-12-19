@@ -7,64 +7,60 @@ const FormData = require('form-data');// more info at:
 // https://jwt.io/#libraries
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto')
+const {execute, enforce} = require('./casbin/casbinHelper')
+const bodyParser = require('body-parser')
 
 
 const port = 3001
 
+const toReadWrite = {
+    'GET': 'read',
+    'POST': 'write'
+}
+
 env.config()
 
-// system variables where Client credentials are stored
 const CLIENT_ID = process.env.CLIENT_ID
 const CLIENT_SECRET = process.env.CLIENT_SECRET
-// callback URL configured during Client registration in OIDC provider
 const CALLBACK = 'callback'
-
-console.log(CLIENT_ID)
-console.log(CLIENT_SECRET)
-
 
 const app = express()
 app.use(cookieParser());
+app.use(express.urlencoded({ extended: true }))
+
 
 app.get('/', (req, resp) => {
-    resp.send('<a href=/login>Use Google Account</a><br></br><a href=/test>Test content</a>')
+    resp.send('<a href=/login>Use Google Account</a><br></br><a href=/list>Check Task Lists</a><br></br><a href=/admin>Admin Room</a>')
 })
 
-// More information at:
-//      https://developers.google.com/identity/protocols/OpenIDConnect
+
 
 let sessions = [];
 
-app.get('/login', (req, resp) => {
+function login(req, resp) {
     let state = crypto.randomUUID()
     
-    sessions.push({state})
+    sessions.push({'state':state})
     resp.redirect(302,
-        // authorization endpoint
         'https://accounts.google.com/o/oauth2/v2/auth?'
         
-        // client id
         + 'client_id='+ CLIENT_ID +'&'
         
-        // OpenID scope "openid email"
-        + 'scope=openid%20email&'
-        
-        // parameter state is used to check if the user-agent requesting login is the same making the request to the callback URL
-        // more info at https://www.rfc-editor.org/rfc/rfc6749#section-10.12
+        + 'scope=openid%20email%20https://www.googleapis.com/auth/tasks&'
+
         + 'state='+ state +'&'
         
-        // responde_type for "authorization code grant"
         + 'response_type=code&'
         
-        // redirect uri used to register RP
         + 'redirect_uri=http://localhost:3001/'+CALLBACK)
-})
+}
 
 
-app.get('/'+CALLBACK, (req, resp) => {
+function callback(req, resp) {
 
+    let session = sessions.find((element) => req.query.state == element.state)
 
-    if (sessions.some((element) => req.query.state == element.state)) {
+    if (session) {
             console.log("here2")
 
         
@@ -79,16 +75,12 @@ app.get('/'+CALLBACK, (req, resp) => {
             //console.log(form);
         
             axios.post(
-                // token endpoint
                 'https://www.googleapis.com/oauth2/v3/token', 
-                // body parameters in form url encoded
                 form,
                 { headers: form.getHeaders() }
               )
               .then(function (response) {
-                // AXIOS assumes by default that response type is JSON: https://github.com/axios/axios#request-config
-                // Property response.data should have the JSON response according to schema described here: https://openid.net/specs/openid-connect-core-1_0.html#TokenResponse
-        
+
                 console.log(response.data)
                 // decode id_token from base64 encoding
                 // note: method decode does not verify signature
@@ -96,7 +88,16 @@ app.get('/'+CALLBACK, (req, resp) => {
                 console.log(jwt_payload)
         
                 // a simple cookie example
-                resp.cookie("DemoCookie", jwt_payload.email)
+                resp.cookie("AuthCookie", session.state)
+                sessions.map(
+                    x => {
+                        if (x.state == session.state) {
+                            x.token = response.data.access_token
+                            x.email = jwt_payload.email
+                        }
+                        return x
+                    }
+                )
                 // HTML response with the code and access token received from the authorization server
                 resp.send(
                     '<div> callback with code = <code>' + req.query.code + '</code></div><br>' +
@@ -112,17 +113,143 @@ app.get('/'+CALLBACK, (req, resp) => {
               });
 
     }
-})
-
-app.get('/test', (req, resp) => {
-
-
-})
-
-
-function getToken() {
-    
 }
+
+
+function authMiddleware(req, resp, next) {
+    if (!req.cookies.AuthCookie || !getToken(req.cookies.AuthCookie)) {
+        resp.redirect('/login')
+    } else {
+        next()
+    }
+}
+
+function rbacMiddleware(req, resp, next) {
+    const sub = getEmail(req.cookies.AuthCookie)
+    const { path: obj } = req;
+    const act = toReadWrite[req.method];
+    enforce(sub, obj, act).then(decision => {
+        execute(decision)
+        if(decision.res) next()
+        else resp.redirect('/unauthorized')
+    })
+}
+
+function getToken(state) {
+
+    let session = sessions.find((element) => state == element.state)
+    if (session) {
+        return session.token
+    } else return null
+
+}
+
+function getEmail(state) {
+
+    let session = sessions.find((element) => state == element.state)
+    if (session) {
+        return session.email
+    } else return null
+
+}
+
+
+function getTaskList(req, resp) {
+    //resp.send('<a>getTaskList<a>')
+    const token = getToken(req.cookies.AuthCookie)
+    axios.get(
+        `https://tasks.googleapis.com/tasks/v1/lists/${req.params.id}/tasks`, 
+        { headers: {Authorization: `Bearer ${token}` } }
+    ).then(function (response) {
+
+        console.log(response.data)
+        let listHtml = response.data.items.map(item => `<div><h1>Name: ${item.title}</h1><p>Notes: ${item.notes ? item.notes : "There's no notes for this task"}<br></br>LastUpdated: ${item.updated}</p></div>`).join("<br></br>")
+        listHtml += "<br></br><h1>Create a new task</h1>" +
+        "<form method='post' action='/list/"+req.params.id+"'>" + 
+        "<label for='title'>Title:</label><br></br>" +
+        "<input type='text' id='title' name='title'><br></br>" +
+        "<label for='notes'>Notes:</label><br></br>" +
+        "<input type='text' id='notes' name='notes'><br></br><br></br>" +
+        "<input type='submit' value='Submit'>" +
+        "</form>"
+        
+        resp.send(listHtml)
+      })
+      .catch(function (error) {
+        console.log(error)
+        resp.send()
+      });
+}
+
+function getAllTaskLists(req, resp) {
+    //resp.send('<a>getTaskList<a>')
+    const token = getToken(req.cookies.AuthCookie)
+    axios.get(
+        `https://tasks.googleapis.com/tasks/v1/users/@me/lists`, 
+        { headers: {Authorization: `Bearer ${token}` } }
+    ).then(function (response) {
+        //var json_response = JSON.parse(response.body);
+        console.log(response.data.items)
+
+        let html = '<h1>All TaskLists:</h1><br></br>'
+
+        response.data.items.forEach(element => {
+            html = html + `<a href='/list/${element.id}'>Title: ${element.title}</a><br></br>`
+        });
+
+        resp.send(html)
+      })
+      .catch(function (error) {
+        console.log(error)
+        resp.send()
+      });
+}
+
+function postTask(req, resp) {
+
+    const token = getToken(req.cookies.AuthCookie)
+    console.log(req.body)
+    axios.post(
+        `https://tasks.googleapis.com/tasks/v1/lists/${req.params.id}/tasks`, 
+        { title: req.body.title, notes: req.body.notes },
+        { headers:{
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        } }
+    ).then(function (response) {
+        resp.redirect(`/list/${req.params.id}`)
+      })
+      .catch(function (error) {
+        console.log(error)
+        resp.send()
+      });
+
+}
+
+function unauthorized(req, resp){
+    resp.send('<p>YOU ARE UNHAUTORIZED</p>')
+}
+
+function admin_room(req, resp){
+    resp.send('<p>Welcome to the Admin Room</p> <p>Only Admin users can access it.</p>')
+}
+
+app.get('/login', login)
+
+app.get('/' + CALLBACK, callback)
+
+app.get('/list/:id', authMiddleware, rbacMiddleware, getTaskList)
+app.get('/list', authMiddleware, rbacMiddleware, getAllTaskLists)
+
+app.post('/list/:id', authMiddleware, rbacMiddleware, postTask)
+
+//app.get('/error', error)
+
+app.get('/unauthorized', unauthorized)
+
+app.get('/admin', rbacMiddleware, admin_room)
+
+
 
 app.listen(port, (err) => {
     if (err) {
