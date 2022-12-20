@@ -10,7 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "axios": "^1.2.1",
-    "body-parser": "^1.20.0",
+    "body-parser": "^1.20.1",
     "casbin": "^5.15.1",
     "cookie-parser": "^1.4.6",
     "dotenv": "^16.0.1",
