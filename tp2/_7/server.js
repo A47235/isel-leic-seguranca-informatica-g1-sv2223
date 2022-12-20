@@ -1,166 +1,112 @@
 const express = require('express')
-const app = express()
-var request = require('request')
-const crypto = require('crypto')
+const cookieParser = require('cookie-parser');
+const axios = require('axios');
 const env = require('dotenv')
-const bodyParser = require('body-parser')
-const cookieParser = require('cookie-parser')
-var jwt = require('jsonwebtoken')
-const res = require('express/lib/response')
-const { json } = require('body-parser')
-const { execute, enforce} = require('./casbin/casbinHelper')
-let state_DB = []
+const FormData = require('form-data');
+const jwt = require('jsonwebtoken');
+const crypto = require('crypto')
+const {execute, enforce} = require('./casbin/casbinHelper')
 
-const methodToAction = {
-    GET: 'read',
-    POST: 'write'
-}
 
 const port = 3001
+
+const toReadWrite = {
+    'GET': 'read',
+    'POST': 'write'
+}
+
 env.config()
 
-// system variables where RP credentials are stored
 const CLIENT_ID = process.env.CLIENT_ID
 const CLIENT_SECRET = process.env.CLIENT_SECRET
 const CALLBACK = 'callback'
 
-app.use(cookieParser())
-app.use(express.json())
+const app = express()
+app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }))
- 
-const login = (req, resp) => {
+
+
+app.get('/', (req, resp) => {
+    resp.send('<a href=/login>Use Google Account</a><br></br><a href=/list>Check Task Lists</a><br></br><a href=/admin>Admin Room</a>')
+})
+
+
+
+let sessions = [];
+
+function login(req, resp) {
     let state = crypto.randomUUID()
-    state_DB.push({state})
+    
+    sessions.push({'state':state})
     resp.redirect(302,
         'https://accounts.google.com/o/oauth2/v2/auth?'
+        
         + 'client_id='+ CLIENT_ID +'&'
+        
         + 'scope=openid%20email%20https://www.googleapis.com/auth/tasks&'
-        + `state=${state}&`
+
+        + 'state='+ state +'&'
+        
         + 'response_type=code&'
-        + 'redirect_uri=http://localhost:3001/' + CALLBACK
-    )
+        
+        + 'redirect_uri=http://localhost:3001/'+CALLBACK)
 }
 
-const callback = (req, resp) => {
-    if(verifyState(req.query.state)){
-        request
-            .post(
-                { 
-                    url: 'https://www.googleapis.com/oauth2/v3/token',
-                    // body parameters
-                    form: {
-                        code: req.query.code,
-                        client_id: CLIENT_ID,
-                        client_secret: CLIENT_SECRET,
-                        redirect_uri: 'http://localhost:3001/'+CALLBACK,
-                        grant_type: 'authorization_code'
-                    }
-                }, 
-                function(err, httpResponse, body){
-                    if(err){
-                        resp.redirect('/error')
-                    }
-                    var json_response = JSON.parse(body);
-                    var jwt_payload = jwt.decode(json_response.id_token)
-                    
-                    //resp.cookie("AuthCookie",json_response.access_token,{maxAge:3600,httpOnly:true})
-                    const access_token = json_response.access_token
-                    request
-                        .get(
-                            {
-                                url: 'https://tasks.googleapis.com/tasks/v1/users/@me/lists',
-                                headers:{
-                                    Authorization: `Bearer ${json_response.access_token}`
-                                }
-                            },
-                            function(err, httpResponse, body) { 
-                                if(err){
-                                    resp.redirect('/error')
-                                }
 
-                                var json_response = JSON.parse(body);
-                                
-                                state_DB = state_DB.map(index => {
-                                    if(index.state == req.query.state) {
-                                        index.token = access_token
-                                        index.email = jwt_payload.email
-                                        resp.cookie("AuthCookie",index.state)
-                                    }
-                                    return index
-                                })
-                                //resp.cookie("AuthCookie",access_token)
-                                let listHtml = json_response.items.map(item => `<div><a href = '/list/${item.id}'>${item.title}</a></div>`).join("<br></br>")
-                                resp.send(listHtml)
-                            }
-                        )
-                }
-            );
-    }else{
-        resp.redirect('/error')
+function callback(req, resp) {
+
+    let session = sessions.find((element) => req.query.state == element.state)
+
+    if (session) {
+
+            console.log('making request to token endpoint')
+            const form = new FormData();
+            form.append('code', req.query.code);
+            form.append('client_id', CLIENT_ID);
+            form.append('client_secret', CLIENT_SECRET);
+            form.append('redirect_uri', 'http://localhost:3001/'+CALLBACK);
+            form.append('grant_type', 'authorization_code');
+        
+            axios.post(
+                'https://www.googleapis.com/oauth2/v3/token', 
+                form,
+                { headers: form.getHeaders() }
+              )
+              .then(function (response) {
+
+                console.log(response.data)
+
+                var jwt_payload = jwt.decode(response.data.id_token)
+                console.log(jwt_payload)
+        
+                resp.cookie("AuthCookie", session.state)
+                sessions.map(
+                    x => {
+                        if (x.state == session.state) {
+                            x.token = response.data.access_token
+                            x.email = jwt_payload.email
+                        }
+                        return x
+                    }
+                )
+                resp.send(
+                    '<div> callback with code = <code>' + req.query.code + '</code></div><br>' +
+                    '<div> client app received access code = <code>' + response.data.access_token + '</code></div><br>' +
+                    '<div> id_token = <code>' + response.data.id_token + '</code></div><br>' +
+                    '<div> Hi <b>' + jwt_payload.email + '</b> </div><br>' +
+                    'Go back to <a href="/">Home screen</a>'
+                );
+              })
+              .catch(function (error) {
+                console.log(error)
+                resp.send()
+              });
+
     }
 }
 
-// ACTIONS
 
-const getTaskList = (req, resp) => {
-    const token = getToken(req.cookies.AuthCookie)
-    request
-        .get(
-            {
-                url: `https://tasks.googleapis.com/tasks/v1/lists/${req.params.id}/tasks`,
-                headers:{
-                    Authorization: `Bearer ${token}`
-                }
-            },
-            function(err, httpResponse, body){
-                if(err){
-                    resp.redirect('/error')
-                }
-
-                var json_response = JSON.parse(body);
-                let listHtml = json_response.items.map(item => `<div><h1 href = '/task/${item.id}'>${item.title}</h1><p>${item.notes ? item.notes : "There's no notes for this task"}</p></div>`).join("<br></br>")
-                listHtml += "<br></br><h1>Create a new task</h1><form method= 'post'>" + 
-                "<label for='title'>Title:</label><br>" +
-                "<input type='text' id='title' name='title' value=''><br>" +
-                "<label for='notes'>Notes:</label><br>" +
-                "<input type='text' id='notes' name='notes' value=''><br><br>" +
-                "<input type='submit' value='Submit'>" +
-                "</form>"
-                resp.send(listHtml)
-            }
-        )
-}
-
-const postTask = (req,resp) => {
-    const token = getToken(req.cookies.AuthCookie)
-    request
-        .post(
-            {
-                url: `https://tasks.googleapis.com/tasks/v1/lists/${req.params.id}/tasks`,
-                headers:{
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body:JSON.stringify({ title: req.body.title, notes: req.body.notes })
-            },
-            function(err, httpResponse, body){
-                if(err){
-                    resp.redirect('/error')
-                }
-                resp.redirect(`/list/${req.params.id}`)
-            }
-        )
-}
-
-const error = (req, resp) => {
-    resp.send("<p>Something went wrong. Try again. </p><a href='/login'>Login</a>")
-}
-
-const unauthorized = (req, resp) => {
-    resp.send(`<p>You are not allowed to access this feature.</p> <img src="https://st.depositphotos.com/3332767/4585/i/950/depositphotos_45854107-stock-photo-man-holding-stop-sign.jpg" width="1000" height="600">`)
-}
-
-const authMiddleware = (req, resp, next) => {
+function authMiddleware(req, resp, next) {
     if (!req.cookies.AuthCookie || !getToken(req.cookies.AuthCookie)) {
         resp.redirect('/login')
     } else {
@@ -168,53 +114,130 @@ const authMiddleware = (req, resp, next) => {
     }
 }
 
-const rbacMiddleware = (req, resp, next) => {
+function rbacMiddleware(req, resp, next) {
     const sub = getEmail(req.cookies.AuthCookie)
-    const { path: obj } = req;
-    const act = methodToAction[req.method];
-    enforce(sub, obj, act).then(decision => {
+    const act = toReadWrite[req.method];
+    enforce(sub, req.path, act).then(decision => {
         execute(decision)
         if(decision.res) next()
         else resp.redirect('/unauthorized')
     })
 }
 
-const getToken = (state) => {
-    let token = state_DB.filter(index => {
-        return index.state == state
-    })[0].token
-    return token
+function getToken(state) {
+
+    let session = sessions.find((element) => state == element.state)
+    if (session) {
+        return session.token
+    } else return null
+
 }
 
-const getEmail = (state) => {
-    let email = state_DB.filter(index => {
-        return index.state == state
-    })[0].email
-    return email
+function getEmail(state) {
+
+    let session = sessions.find((element) => state == element.state)
+    if (session) {
+        return session.email
+    } else return null
+
 }
 
-const verifyState = (state) => {
-    return state_DB.filter(index => index.state == state)[0]
+
+function getTaskList(req, resp) {
+    const token = getToken(req.cookies.AuthCookie)
+    axios.get(
+        `https://tasks.googleapis.com/tasks/v1/lists/${req.params.id}/tasks`, 
+        { headers: {Authorization: `Bearer ${token}` } }
+    ).then(function (response) {
+
+        console.log(response.data)
+        let listHtml = response.data.items.map(item => `<div><h1>Name: ${item.title}</h1><p>Notes: ${item.notes ? item.notes : "There's no notes for this task"}<br></br>LastUpdated: ${item.updated}</p></div>`).join("<br></br>")
+        listHtml += "<br></br><h1>Create a new task</h1>" +
+        "<form method='post' action='/list/"+req.params.id+"'>" + 
+        "<label for='title'>Title:</label><br></br>" +
+        "<input type='text' id='title' name='title'><br></br>" +
+        "<label for='notes'>Notes:</label><br></br>" +
+        "<input type='text' id='notes' name='notes'><br></br><br></br>" +
+        "<input type='submit' value='Submit'>" +
+        "</form>"
+        
+        resp.send(listHtml)
+      })
+      .catch(function (error) {
+        console.log(error)
+        resp.send()
+      });
 }
 
+function getAllTaskLists(req, resp) {
+    const token = getToken(req.cookies.AuthCookie)
+    axios.get(
+        `https://tasks.googleapis.com/tasks/v1/users/@me/lists`, 
+        { headers: {Authorization: `Bearer ${token}` } }
+    ).then(function (response) {
+        console.log(response.data.items)
 
-app.get('/', (req, resp) => {
-    resp.send('<a href="/login">Use Google Account</a>')
-})
+        let html = '<h1>All TaskLists:</h1><br></br>'
+
+        response.data.items.forEach(element => {
+            html = html + `<a href='/list/${element.id}'>Title: ${element.title}</a><br></br>`
+        });
+
+        resp.send(html)
+      })
+      .catch(function (error) {
+        console.log(error)
+        resp.send()
+      });
+}
+
+function postTask(req, resp) {
+
+    const token = getToken(req.cookies.AuthCookie)
+    console.log(req.body)
+    axios.post(
+        `https://tasks.googleapis.com/tasks/v1/lists/${req.params.id}/tasks`, 
+        { title: req.body.title, notes: req.body.notes },
+        { headers:{
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        } }
+    ).then(function (response) {
+        resp.redirect(`/list/${req.params.id}`)
+      })
+      .catch(function (error) {
+        console.log(error)
+        resp.send()
+      });
+
+}
+
+function unauthorized(req, resp){
+    resp.send('<p>YOU ARE UNHAUTORIZED</p>')
+}
+
+function admin_room(req, resp){
+    resp.send('<p>Welcome to the Admin Room</p> <p>Only Admin users can access it.</p>')
+}
 
 app.get('/login', login)
 
 app.get('/' + CALLBACK, callback)
 
 app.get('/list/:id', authMiddleware, rbacMiddleware, getTaskList)
+app.get('/list', authMiddleware, rbacMiddleware, getAllTaskLists)
 
 app.post('/list/:id', authMiddleware, rbacMiddleware, postTask)
 
-app.get('/error', error)
-
 app.get('/unauthorized', unauthorized)
 
+app.get('/admin', authMiddleware, rbacMiddleware, admin_room)
+
+
+
 app.listen(port, (err) => {
-    if (err) { return console.log('something bad happened', err) }
+    if (err) {
+        return console.log('something bad happened', err)
+    }
     console.log(`server is listening on ${port}`)
 })
